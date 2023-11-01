@@ -4,17 +4,10 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Color
-import android.graphics.ColorFilter
 import android.graphics.CornerPathEffect
-import android.graphics.DashPathEffect
-import android.graphics.LinearGradient
-import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.Path
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.graphics.RectF
-import android.graphics.Shader
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
@@ -27,12 +20,10 @@ import java.util.Random
 import kotlin.math.max
 
 
-class GlucoseGraphCustomView @JvmOverloads constructor(
-    context: Context,
-    attributeSet: AttributeSet?
+class GlucoseGraphCustomView(
+    context: Context, attributeSet: AttributeSet?
 ) : View(
-    context,
-    attributeSet
+    context, attributeSet
 ) {
     var graphData: GraphData? = null
         set(value) {
@@ -40,14 +31,16 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
             updateUISize()
             requestLayout()
             invalidate()
+            graphPath.reset()
         }
+
     private var graphAttr: GraphAttr? = null
 
     private var aboveLine = 0f
     private var belowLine = 0f
 
     private val graphPath = Path()
-    private val clipPath = Path()
+    private val graphClipPath = Path()
 
     private val fieldRect = RectF()
 
@@ -55,9 +48,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         color = Color.parseColor("#E2E2E2")
         style = Paint.Style.STROKE
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            2f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics
         )
     }
 
@@ -65,9 +56,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         color = Color.BLACK
         style = Paint.Style.STROKE
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            1f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 1f, resources.displayMetrics
         )
         alpha = (0.25 * 255).toInt()
     }
@@ -76,9 +65,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         color = Color.parseColor("#FF005C")
         style = Paint.Style.STROKE
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            1f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 1f, resources.displayMetrics
         )
         alpha = (0.25 * 255).toInt()
     }
@@ -86,24 +73,18 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
     private val lineGraphPaint2: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.BLACK
         textSize = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            14f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 14f, resources.displayMetrics
         )
         style = Paint.Style.STROKE
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            2f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics
         )
     }
     private val graphPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
         color = Color.parseColor("#1F849A")
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            4f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics
         )
         pathEffect = CornerPathEffect(ROUND_LINE_VALUE)
     }
@@ -111,9 +92,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
     private val stichesPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = Color.parseColor("#1F849A")
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            4f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics
         )
     }
 
@@ -121,9 +100,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         color = Color.parseColor("#ECB800")
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            4f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics
         )
         pathEffect = CornerPathEffect(ROUND_LINE_VALUE)
     }
@@ -132,9 +109,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         style = Paint.Style.STROKE
         color = Color.parseColor("#FF005C")
         strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            4f,
-            resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_DIP, 4f, resources.displayMetrics
         )
         pathEffect = CornerPathEffect(ROUND_LINE_VALUE)
     }
@@ -173,8 +148,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
                     230,
                     250,
                     100,
-                ).shuffled(Random(15)),
-                glucoseRange = (40..250 step 30).toList(),
+                ).shuffled(Random(15)), glucoseRange = (40..250 step 30).toList(),
                 dateRange = listOf(
                     "12 am",
                     "6 am",
@@ -191,63 +165,45 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
 //                    "Thu",
 //                    "Fri",
 //                    ),
-                aboveNormal = 190,
-                belowNormal = 70,
-                dateType = DateType.Last24
+                aboveNormal = 190, belowNormal = 70, dateType = DateType.Last24
             )
         }
     }
 
     override fun onSizeChanged(
-        w: Int,
-        h: Int,
-        oldw: Int,
-        oldh: Int
+        w: Int, h: Int, oldw: Int, oldh: Int
     ) {
         super.onSizeChanged(
-            w,
-            h,
-            oldw,
-            oldh
+            w, h, oldw, oldh
         )
         updateUISize()
     }
 
     override fun onMeasure(
-        widthMeasureSpec: Int,
-        heightMeasureSpec: Int
+        widthMeasureSpec: Int, heightMeasureSpec: Int
     ) {
         val minWidth = suggestedMinimumWidth + paddingStart + paddingEnd
         val minHeight = suggestedMinimumHeight + paddingTop + paddingBottom
 
-        val desiredCellSizeInPixel = TypedValue
-            .applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                DESIRED_SIZE,
-                resources.displayMetrics
-            )
-            .toInt()
+        val desiredCellSizeInPixel = TypedValue.applyDimension(
+            TypedValue.COMPLEX_UNIT_DIP, DESIRED_SIZE, resources.displayMetrics
+        ).toInt()
 
-        val rows = graphData!!.glucoseValue.size ?: 0
-        val columns = graphData!!.glucoseRange.size ?: 0
+        val rows = graphData!!.glucoseValue.size
+        val columns = graphData!!.glucoseRange.size
 
         val desiredWidth = max(
-            columns * desiredCellSizeInPixel + paddingEnd + paddingStart,
-            minWidth
+            columns * desiredCellSizeInPixel + paddingEnd + paddingStart, minWidth
         )
         val desiredHeight = max(
-            rows * desiredCellSizeInPixel + paddingTop + paddingBottom,
-            minHeight
+            rows * desiredCellSizeInPixel + paddingTop + paddingBottom, minHeight
         )
 
         setMeasuredDimension(
             resolveSize(
-                desiredWidth,
-                widthMeasureSpec
-            ),
-            resolveSize(
-                desiredHeight,
-                heightMeasureSpec
+                desiredWidth, widthMeasureSpec
+            ), resolveSize(
+                desiredHeight, heightMeasureSpec
             )
         )
     }
@@ -268,6 +224,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         fieldRect.top = paddingTop + (safeHeight - fieldHeight) / 2
         fieldRect.right = fieldRect.left + fieldWidth
         fieldRect.bottom = fieldRect.top + fieldHeight
+
     }
 
 
@@ -276,8 +233,8 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         if (graphData == null) return
         drawBackground(canvas)
         drawHorizontalLines(canvas)
-        drawStiches(canvas, belowLine, fieldRect.bottom, gridBelowNormalPaint, 25)
-        drawStiches(canvas, 0f, aboveLine, gridAboveNormalPaint, 25)
+        drawStiches(canvas, belowLine, fieldRect.bottom, gridBelowNormalPaint, 25f)
+        drawStiches(canvas, 0f, aboveLine, gridAboveNormalPaint, 25f)
         drawVerticalGrid(canvas)
 //        drawText(canvas)
         drawGraph(canvas)
@@ -288,29 +245,27 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
     }
 
     private fun drawStiches(
-        canvas: Canvas,
-        startY: Float,
-        endY: Float,
-        paint: Paint,
-        step : Int
+        canvas: Canvas, startY: Float, endY: Float, paint: Paint, step: Float
     ) {
         val background = Bitmap.createBitmap(
-            width,
-            endY.toInt(),
-            Bitmap.Config.ARGB_8888
+            width, endY.toInt(), Bitmap.Config.ARGB_8888
         )
 
         val lineCanvas = Canvas(background)
 
         var moveToX = 0f
-        var moveToBX = -width
+        var moveToBX = -width.toFloat()
 
         while (moveToX < (width + width / 2)) {
-            lineCanvas.drawLine(moveToX, 0f, moveToBX.toFloat(), height.toFloat(), paint)
+            lineCanvas.drawLine(
+                moveToX, 0f, moveToBX.toFloat(), height.toFloat(), paint
+            )
             moveToX += step
             moveToBX += step
         }
-        canvas.drawBitmap(background, 0f, startY, null)
+        canvas.drawBitmap(
+            background, 0f, startY, null
+        )
     }
 
     private fun drawVerticalGrid(canvas: Canvas) {
@@ -319,11 +274,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         for (i in 0 until graphData!!.dateRange.size) {
             val x = xStart + step * i
             canvas.drawLine(
-                x,
-                fieldRect.top,
-                x,
-                fieldRect.bottom,
-                gridPaint
+                x, fieldRect.top, x, fieldRect.bottom, gridPaint
             )
         }
 
@@ -337,18 +288,10 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         aboveLine = y1
         belowLine = y2
         canvas.drawLine(
-            fieldRect.left,
-            y1,
-            width.toFloat(),
-            y1,
-            gridPaint
+            fieldRect.left, y1, width.toFloat(), y1, gridPaint
         )
         canvas.drawLine(
-            fieldRect.left,
-            y2,
-            width.toFloat(),
-            y2,
-            gridPaint
+            fieldRect.left, y2, width.toFloat(), y2, gridPaint
         )
     }
 
@@ -364,8 +307,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
             when (i) {
                 0 -> {
                     graphPath.moveTo(
-                        xStart,
-                        y
+                        xStart, y
                     )
                 }
 
@@ -373,56 +315,54 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
                     when {
                         (glucoseList[i - 1] < glucoseList[i]) -> {
                             graphPath.lineTo(
-                                x,
-                                y - ROUND_LINE_VALUE / 2
+                                x, y - ROUND_LINE_VALUE / 2
                             )
                         }
 
                         (glucoseList[i - 1] > glucoseList[i]) -> {
                             graphPath.lineTo(
-                                x,
-                                y + ROUND_LINE_VALUE / 2
+                                x, y + ROUND_LINE_VALUE / 2
                             )
                         }
 
                         else -> {
                             graphPath.lineTo(
-                                x,
-                                y
+                                x, y
                             )
                         }
                     }
                 }
             }
         }
-        canvas.drawPath(
-            graphPath,
-            graphPaint
-        )
-        clipPath.addRect(
-            0f,
-            0f,
-            width.toFloat(),
-            aboveLine,
-            Path.Direction.CW
-        )
-        canvas.clipPath(clipPath)
-        canvas.drawPath(
-            graphPath,
-            graphPaintAbove
-        )
-        clipPath.reset()
-        clipPath.addRect(
-            0f,
-            belowLine,
-            width.toFloat(),
-            height.toFloat(),
-            Path.Direction.CW
-        )
-        canvas.clipPath(clipPath)
-        canvas.drawPath(
-            graphPath,
-            graphPaintBelow
+
+        val bitmap = Bitmap.createBitmap(
+            width, height, Bitmap.Config.ARGB_8888
+        ).applyCanvas {
+            drawPath(
+                graphPath, graphPaint
+            )
+        }.applyCanvas {
+            graphClipPath.reset()
+
+            graphClipPath.addRect(
+                0f, 0f, width.toFloat(), aboveLine, Path.Direction.CW
+            )
+            clipPath(graphClipPath)
+            drawPath(
+                graphPath, graphPaintAbove
+            )
+        }.applyCanvas {
+            graphClipPath.reset()
+            graphClipPath.addRect(
+                0f, belowLine, width.toFloat(), height.toFloat(), Path.Direction.CW
+            )
+            clipPath(graphClipPath)
+            drawPath(
+                graphPath, graphPaintBelow
+            )
+        }
+        canvas.drawBitmap(
+            bitmap, 0f, 0f, null
         )
     }
 
@@ -434,10 +374,7 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
             val textHeight = fontMetrics.descent - fontMetrics.ascent
             val y = fieldRect.bottom - coef * i + (textHeight * (i - 2)) / 4
             canvas.drawText(
-                data.glucoseRange[i].toString(),
-                20f,
-                y,
-                lineGraphPaint2
+                data.glucoseRange[i].toString(), 20f, y, lineGraphPaint2
             )
         }
     }
@@ -452,24 +389,15 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
 
         graphAttr = GraphAttr(
             textColor = typedArray.getColor(
-                R.styleable.GraphCustomView_textColor,
-                TEXT_COLOR_DEFAULT
-            ),
-            lineGraphColor = typedArray.getColor(
-                R.styleable.GraphCustomView_lineGraphColor,
-                LINE_GRAPH_COLOR_DEFAULT
-            ),
-            lineGraphStrokeWidth = typedArray.getDimension(
-                R.styleable.GraphCustomView_lineGraphStrokeWidth,
-                LINE_GRAPH_STROKE_WIDTH_DEFAULT
-            ),
-            textSize = typedArray.getDimension(
-                R.styleable.GraphCustomView_textSize,
-                TEXT_SIZE_DEFAULT
-            ),
-            gridColor = typedArray.getColor(
-                R.styleable.GraphCustomView_gridColor,
-                GRID_COLOR_COLOR_DEFAULT
+                R.styleable.GraphCustomView_textColor, TEXT_COLOR_DEFAULT
+            ), lineGraphColor = typedArray.getColor(
+                R.styleable.GraphCustomView_lineGraphColor, LINE_GRAPH_COLOR_DEFAULT
+            ), lineGraphStrokeWidth = typedArray.getDimension(
+                R.styleable.GraphCustomView_lineGraphStrokeWidth, LINE_GRAPH_STROKE_WIDTH_DEFAULT
+            ), textSize = typedArray.getDimension(
+                R.styleable.GraphCustomView_textSize, TEXT_SIZE_DEFAULT
+            ), gridColor = typedArray.getColor(
+                R.styleable.GraphCustomView_gridColor, GRID_COLOR_COLOR_DEFAULT
             )
         )
 
@@ -494,6 +422,5 @@ class GlucoseGraphCustomView @JvmOverloads constructor(
         private const val TEXT_SIZE_DEFAULT = 16f
         private const val DESIRED_SIZE = 50f
         private const val ROUND_LINE_VALUE = 150f
-
     }
 }
