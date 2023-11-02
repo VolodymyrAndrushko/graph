@@ -183,13 +183,12 @@ class GlucoseGraphCustomView(
     ) {
         val minWidth = suggestedMinimumWidth + paddingStart + paddingEnd
         val minHeight = suggestedMinimumHeight + paddingTop + paddingBottom
-
         val desiredCellSizeInPixel = TypedValue.applyDimension(
             TypedValue.COMPLEX_UNIT_DIP, DESIRED_SIZE, resources.displayMetrics
         ).toInt()
 
-        val rows = graphData!!.glucoseValue.size
-        val columns = graphData!!.glucoseRange.size
+        val rows = graphData?.glucoseValue?.size ?: 0
+        val columns = graphData?.glucoseRange?.size ?: 0
 
         val desiredWidth = max(
             columns * desiredCellSizeInPixel + paddingEnd + paddingStart, minWidth
