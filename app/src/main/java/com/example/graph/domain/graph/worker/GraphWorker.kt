@@ -6,6 +6,7 @@ import com.example.graph.presentation.ui.glucose_graph.model.DateType
 import com.example.graph.presentation.ui.glucose_graph.model.GraphData
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlin.random.Random
 
 class GraphWorker : IGraphWorker {
@@ -19,14 +20,14 @@ class GraphWorker : IGraphWorker {
     private val delayMillis: Long = 5000
     private val runnable = object : Runnable {
         override fun run() {
-            updateGraphData(getRandomEnumValue())
+            updateGraphData()
             handler.postDelayed(this, delayMillis)
 
         }
     }
 
     init {
-        updateGraphData(type)
+        updateGraphData()
         handler.postDelayed(runnable, delayMillis)
     }
 
@@ -67,21 +68,17 @@ class GraphWorker : IGraphWorker {
         }
     }
 
-    override fun updateGraphData(dateType: DateType) {
+    override fun updateGraphData() {
+        type = getRandomEnumValue()
         _graphDataState.value = GraphData(
             glucoseValue = (40..250 step Random.nextInt(10,50)).toList().shuffled(),
-//            glucoseValue = (40..250 step Random.nextInt(10,50)).toList().shuffled(),
-////            glucoseValue = listOf(70, 190,70, 190,70, 190,70, 190).shuffled(),
             glucoseRange = (40..250 step 30).toList(),
-////            glucoseRange = (40..250 step 30).toList(),
-            dateRange = getDataRange(dateType),
+            dateRange = getDataRange(type),
             aboveNormal = 190,
             belowNormal = 70,
-            dateType = dateType
+            dateType = type
         )
     }
-
-
 
     fun getRandomEnumValue(): DateType {
         val enumValues = DateType.values()

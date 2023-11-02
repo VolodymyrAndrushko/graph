@@ -11,4 +11,8 @@ class MainViewModel : ViewModel() {
     val repository : IRepository = Repository()
 
     val graphDataState : StateFlow<GraphData?> = repository.graphData
+
+    fun updateGraph(){
+        repository.updateGraph()
+    }
 }

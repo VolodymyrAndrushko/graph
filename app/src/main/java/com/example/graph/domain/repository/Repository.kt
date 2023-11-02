@@ -7,9 +7,11 @@ import kotlinx.coroutines.flow.StateFlow
 
 class Repository : IRepository {
     //Has to provides via di
-
     private val graphCore : IGraphCore = GraphCore()
 
     override val graphData: StateFlow<GraphData?>
-        get() = GraphCore().graphData
+        get() = graphCore.graphData
+
+    override fun updateGraph() {
+        graphCore.updateGraph()    }
 }

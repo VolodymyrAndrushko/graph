@@ -7,5 +7,5 @@ import kotlinx.coroutines.flow.StateFlow
 interface IGraphWorker {
     val graphDataState : StateFlow<GraphData?>
 
-    fun updateGraphData(dateType: DateType)
+    fun updateGraphData()
 }

@@ -11,4 +11,8 @@ class GraphCore : IGraphCore{
 
     override val graphData: StateFlow<GraphData?> = graphWorker.graphDataState
 
+    override fun updateGraph() {
+        graphWorker.updateGraphData()
+    }
+
 }
