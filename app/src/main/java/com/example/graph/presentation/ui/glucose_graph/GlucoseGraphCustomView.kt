@@ -1,5 +1,6 @@
 package com.example.graph.presentation.ui.glucose_graph
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -8,6 +9,7 @@ import android.graphics.CornerPathEffect
 import android.graphics.Paint
 import android.graphics.Path
 import android.graphics.RectF
+import android.graphics.Typeface
 import android.util.AttributeSet
 import android.util.TypedValue
 import android.view.View
@@ -70,15 +72,12 @@ class GlucoseGraphCustomView(
         alpha = (0.25 * 255).toInt()
     }
 
-    private val lineGraphPaint2: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = Color.BLACK
+    private val textPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = Color.parseColor("#747474")
         textSize = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, 14f, resources.displayMetrics
+            TypedValue.COMPLEX_UNIT_SP, 12f, resources.displayMetrics
         )
-        style = Paint.Style.STROKE
-        strokeWidth = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP, 2f, resources.displayMetrics
-        )
+        typeface = Typeface.DEFAULT
     }
     private val graphPaint: Paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         style = Paint.Style.STROKE
@@ -122,10 +121,7 @@ class GlucoseGraphCustomView(
         }
 
     init {
-        if (attributeSet != null) {
-            initAttributes(attributeSet)
-        }
-        else {
+        if (attributeSet != null) initAttributes(attributeSet) else {
             initDefaultAttributes()
         }
         if (isInEditMode) {
@@ -148,7 +144,8 @@ class GlucoseGraphCustomView(
                     230,
                     250,
                     100,
-                ).shuffled(Random(15)), glucoseRange = (40..250 step 30).toList(),
+                ).shuffled(Random(15)),
+                glucoseRange = (40..250 step 30).toList(),
                 dateRange = listOf(
                     "12 am",
                     "6 am",
@@ -165,7 +162,9 @@ class GlucoseGraphCustomView(
 //                    "Thu",
 //                    "Fri",
 //                    ),
-                aboveNormal = 190, belowNormal = 70, dateType = DateType.Last24
+                aboveNormal = 190,
+                belowNormal = 70,
+                dateType = DateType.Last24
             )
         }
     }
@@ -220,10 +219,10 @@ class GlucoseGraphCustomView(
         val fieldWidth = cellWidth * field.glucoseValue.size.toFloat()
         val fieldHeight = cellHeight * field.glucoseRange.size.toFloat()
 
-        fieldRect.left = paddingStart + (safeWidth - fieldWidth) / 2
+        fieldRect.left = paddingStart + (safeWidth - fieldWidth) / 2 + TEXT_PADDINB
         fieldRect.top = paddingTop + (safeHeight - fieldHeight) / 2
-        fieldRect.right = fieldRect.left + fieldWidth
-        fieldRect.bottom = fieldRect.top + fieldHeight
+        fieldRect.right = fieldRect.left + fieldWidth - TEXT_PADDINB*2
+        fieldRect.bottom = fieldRect.top + fieldHeight - TEXT_PADDINB
 
     }
 
@@ -233,10 +232,10 @@ class GlucoseGraphCustomView(
         if (graphData == null) return
         drawBackground(canvas)
         drawHorizontalLines(canvas)
-        drawStiches(canvas, belowLine, fieldRect.bottom, gridBelowNormalPaint, 25f)
+        drawStiches(canvas, belowLine, fieldRect.bottom - belowLine, gridBelowNormalPaint, 25f)
         drawStiches(canvas, 0f, aboveLine, gridAboveNormalPaint, 25f)
         drawVerticalGrid(canvas)
-//        drawText(canvas)
+        drawNumbers(canvas)
         drawGraph(canvas)
     }
 
@@ -248,33 +247,40 @@ class GlucoseGraphCustomView(
         canvas: Canvas, startY: Float, endY: Float, paint: Paint, step: Float
     ) {
         val background = Bitmap.createBitmap(
-            width, endY.toInt(), Bitmap.Config.ARGB_8888
+            fieldRect.right.toInt() - TEXT_PADDINB, endY.toInt(), Bitmap.Config.ARGB_8888
         )
 
         val lineCanvas = Canvas(background)
 
         var moveToX = 0f
-        var moveToBX = -width.toFloat()
+        var moveToBX = -fieldRect.right
 
-        while (moveToX < (width + width / 2)) {
+        while (moveToX < (fieldRect.right + fieldRect.right / 2)) {
             lineCanvas.drawLine(
-                moveToX, 0f, moveToBX.toFloat(), height.toFloat(), paint
+                moveToX, 0f, moveToBX, fieldRect.bottom, paint
             )
             moveToX += step
             moveToBX += step
         }
         canvas.drawBitmap(
-            background, 0f, startY, null
+            background, fieldRect.left, startY, null
         )
     }
 
     private fun drawVerticalGrid(canvas: Canvas) {
-        val xStart = fieldRect.left
-        val step = fieldRect.width() / graphData!!.dateRange.size.toFloat()
-        for (i in 0 until graphData!!.dateRange.size) {
-            val x = xStart + step * i
+        val data = graphData ?: return
+        val count = data.dateRange.size
+        val step = fieldRect.right / count.toFloat()
+        val step2 = (fieldRect.right - step/4) / count.toFloat()
+        val xStart = fieldRect.left + step2/2
+        for (i in 0 until data.dateRange.size) {
+            val x = xStart + (step2) * i - step2/4
             canvas.drawLine(
                 x, fieldRect.top, x, fieldRect.bottom, gridPaint
+            )
+            val text = data.dateRange[i]
+            canvas.drawText(
+                text, x - textPaint.measureText(text)/2, fieldRect.bottom - (textPaint.ascent() *2), textPaint
             )
         }
 
@@ -288,10 +294,10 @@ class GlucoseGraphCustomView(
         aboveLine = y1
         belowLine = y2
         canvas.drawLine(
-            fieldRect.left, y1, width.toFloat(), y1, gridPaint
+            fieldRect.left, y1, fieldRect.right, y1, gridPaint
         )
         canvas.drawLine(
-            fieldRect.left, y2, width.toFloat(), y2, gridPaint
+            fieldRect.left, y2, fieldRect.right, y2, gridPaint
         )
     }
 
@@ -299,11 +305,12 @@ class GlucoseGraphCustomView(
         val data = graphData ?: return
         val xStart = fieldRect.left
         val coef = fieldRect.bottom / (glucoseRoundedValue)
-        val stepSizeX = fieldRect.right / data.glucoseValue.size
-        val glucoseList = graphData!!.glucoseValue
+        val glucoseMin = data.glucoseRange.min()
+        val stepSizeX = (fieldRect.right - TEXT_PADDINB) / data.glucoseValue.size
+        val glucoseList = data.glucoseValue
         for (i in glucoseList.indices) {
             val x = xStart + stepSizeX * i
-            val y = fieldRect.bottom - glucoseList[i] * coef + data.glucoseRange.min() * coef
+            val y = fieldRect.bottom - glucoseList[i] * coef + glucoseMin * coef
             when (i) {
                 0 -> {
                     graphPath.moveTo(
@@ -312,16 +319,25 @@ class GlucoseGraphCustomView(
                 }
 
                 else -> {
+                    val isLast = i == glucoseList.size - 1
+                    val isPreviousSame = glucoseList[i - 1] == glucoseList[i]
+                    val isNextSame = !isLast && glucoseList[i + 1] == glucoseList[i]
                     when {
+                        isLast || isPreviousSame || isNextSame -> {
+                            graphPath.lineTo(
+                                x, y
+                            )
+                        }
+
                         (glucoseList[i - 1] < glucoseList[i]) -> {
                             graphPath.lineTo(
-                                x, y - ROUND_LINE_VALUE / 2
+                                x, y - ROUND_LINE_VALUE / ROUND_COEF_VALUE
                             )
                         }
 
                         (glucoseList[i - 1] > glucoseList[i]) -> {
                             graphPath.lineTo(
-                                x, y + ROUND_LINE_VALUE / 2
+                                x, y + ROUND_LINE_VALUE / ROUND_COEF_VALUE
                             )
                         }
 
@@ -333,10 +349,12 @@ class GlucoseGraphCustomView(
                     }
                 }
             }
+//            val text = data.glucoseValue[i].toString()
+//            canvas.drawText(text, x - lineGraphPaint2.measureText(text) / 2, y, lineGraphPaint2)
         }
 
         val bitmap = Bitmap.createBitmap(
-            width, height, Bitmap.Config.ARGB_8888
+            fieldRect.right.toInt(), fieldRect.bottom.toInt(), Bitmap.Config.ARGB_8888
         ).applyCanvas {
             drawPath(
                 graphPath, graphPaint
@@ -345,7 +363,7 @@ class GlucoseGraphCustomView(
             graphClipPath.reset()
 
             graphClipPath.addRect(
-                0f, 0f, width.toFloat(), aboveLine, Path.Direction.CW
+                0f, 0f, fieldRect.right, aboveLine, Path.Direction.CW
             )
             clipPath(graphClipPath)
             drawPath(
@@ -354,7 +372,7 @@ class GlucoseGraphCustomView(
         }.applyCanvas {
             graphClipPath.reset()
             graphClipPath.addRect(
-                0f, belowLine, width.toFloat(), height.toFloat(), Path.Direction.CW
+                0f, belowLine, fieldRect.right, fieldRect.bottom, Path.Direction.CW
             )
             clipPath(graphClipPath)
             drawPath(
@@ -366,19 +384,21 @@ class GlucoseGraphCustomView(
         )
     }
 
-    private fun drawText(canvas: Canvas) {
+    private fun drawNumbers(canvas: Canvas) {
         val data = graphData ?: return
-        val coef = fieldRect.bottom / (data.glucoseRange.size - 1)
+        val coef = fieldRect.bottom / (data.glucoseRange.size)
         for (i in 0 until data.glucoseRange.size) {
-            val fontMetrics = lineGraphPaint2.fontMetrics
+            val fontMetrics = textPaint.fontMetrics
             val textHeight = fontMetrics.descent - fontMetrics.ascent
-            val y = fieldRect.bottom - coef * i + (textHeight * (i - 2)) / 4
+            val y = fieldRect.bottom - coef * i - (textHeight/3f) * i
+            val text = data.glucoseRange[i].toString()
             canvas.drawText(
-                data.glucoseRange[i].toString(), 20f, y, lineGraphPaint2
+                text , TEXT_PADDINB / 4f, y, textPaint
             )
         }
     }
 
+    @SuppressLint("CustomViewStyleable")
     private fun initAttributes(
         attributeSet: AttributeSet?,
     ) {
@@ -422,5 +442,7 @@ class GlucoseGraphCustomView(
         private const val TEXT_SIZE_DEFAULT = 16f
         private const val DESIRED_SIZE = 50f
         private const val ROUND_LINE_VALUE = 150f
+        private const val ROUND_COEF_VALUE = 2.2f
+        private const val TEXT_PADDINB = 100
     }
 }
