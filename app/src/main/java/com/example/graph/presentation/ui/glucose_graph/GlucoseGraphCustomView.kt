@@ -30,10 +30,10 @@ class GlucoseGraphCustomView(
     var graphData: GraphData? = null
         set(value) {
             field = value
+            graphPath.reset()
             updateUISize()
             requestLayout()
             invalidate()
-            graphPath.reset()
         }
 
     private var graphAttr: GraphAttr? = null
@@ -128,23 +128,27 @@ class GlucoseGraphCustomView(
             graphData = GraphData(
                 glucoseValue = listOf(
                     55,
-                    100,
-                    122,
-                    210,
+                    55,
+                    64,
                     144,
                     190,
                     40,
-                    133,
                     80,
                     120,
-                    90,
                     99,
-                    70,
                     40,
                     230,
                     250,
+                    240,
+                    230,
+                    220,
+                    250,
+                    250,
+                    250,
+                    250,
+                    250,
                     100,
-                ).shuffled(Random(15)),
+                ).shuffled(Random(1)),
                 glucoseRange = (40..250 step 30).toList(),
                 dateRange = listOf(
                     "12 am",
@@ -209,7 +213,7 @@ class GlucoseGraphCustomView(
     private fun updateUISize() {
         val field = this.graphData ?: return
 
-        val safeWidth = width - paddingStart - paddingRight
+        val safeWidth = width - paddingStart - paddingEnd
         val safeHeight = height - paddingTop - paddingBottom
 
         val cellWidth = safeWidth / field.glucoseValue.size.toFloat()
@@ -218,9 +222,9 @@ class GlucoseGraphCustomView(
         val fieldWidth = cellWidth * field.glucoseValue.size.toFloat()
         val fieldHeight = cellHeight * field.glucoseRange.size.toFloat()
 
-        fieldRect.left = paddingStart + (safeWidth - fieldWidth) / 2 + TEXT_PADDINB
+        fieldRect.left = (paddingStart + (safeWidth - fieldWidth)+ TEXT_PADDINB) / 2
         fieldRect.top = paddingTop + (safeHeight - fieldHeight) / 2
-        fieldRect.right = fieldRect.left + fieldWidth - TEXT_PADDINB*2
+        fieldRect.right = fieldRect.left + fieldWidth
         fieldRect.bottom = fieldRect.top + fieldHeight - TEXT_PADDINB
 
     }
@@ -305,7 +309,7 @@ class GlucoseGraphCustomView(
         val xStart = fieldRect.left
         val coef = fieldRect.bottom / (glucoseRoundedValue)
         val glucoseMin = data.glucoseRange.min()
-        val stepSizeX = (fieldRect.right - TEXT_PADDINB) / data.glucoseValue.size
+        val stepSizeX = (fieldRect.right) / data.glucoseValue.size
         val glucoseList = data.glucoseValue
         for (i in glucoseList.indices) {
             val x = xStart + stepSizeX * i
@@ -319,8 +323,9 @@ class GlucoseGraphCustomView(
 
                 else -> {
                     val isLast = i == glucoseList.size - 1
-                    val isPreviousSame = glucoseList[i - 1] == glucoseList[i]
-                    val isNextSame = !isLast && glucoseList[i + 1] == glucoseList[i]
+                    val current = glucoseList[i]
+                    val isPreviousSame = glucoseList[i - 1] == current
+                    val isNextSame = !isLast && glucoseList[i + 1] == current
                     when {
                         isLast || isPreviousSame || isNextSame -> {
                             graphPath.lineTo(
@@ -328,13 +333,13 @@ class GlucoseGraphCustomView(
                             )
                         }
 
-                        (glucoseList[i - 1] < glucoseList[i]) -> {
+                        (glucoseList[i - 1] < current ) -> {
                             graphPath.lineTo(
                                 x, y - ROUND_LINE_VALUE / ROUND_COEF_VALUE
                             )
                         }
 
-                        (glucoseList[i - 1] > glucoseList[i]) -> {
+                        (glucoseList[i - 1] > current ) -> {
                             graphPath.lineTo(
                                 x, y + ROUND_LINE_VALUE / ROUND_COEF_VALUE
                             )
@@ -349,7 +354,7 @@ class GlucoseGraphCustomView(
                 }
             }
 //            val text = data.glucoseValue[i].toString()
-//            canvas.drawText(text, x - lineGraphPaint2.measureText(text) / 2, y, lineGraphPaint2)
+//            canvas.drawText(text, x - textPaint.measureText(text) / 2, y, textPaint)
         }
 
         val bitmap = Bitmap.createBitmap(
@@ -441,7 +446,7 @@ class GlucoseGraphCustomView(
         private const val TEXT_SIZE_DEFAULT = 16f
         private const val DESIRED_SIZE = 50f
         private const val ROUND_LINE_VALUE = 150f
-        private const val ROUND_COEF_VALUE = 2.2f
+        private const val ROUND_COEF_VALUE = 2.5f
         private const val TEXT_PADDINB = 100
     }
 }
