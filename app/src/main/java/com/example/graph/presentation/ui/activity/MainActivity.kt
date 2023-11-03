@@ -32,7 +32,15 @@ class MainActivity : AppCompatActivity() {
     private fun setListeners() {
         binding.randBtn.setOnClickListener {
             viewModel.updateGraph()
-            Log.d("ASDASDASDASDASD", viewModel.graphDataState.value.toString())
+        }
+        binding.last8.setOnClickListener {
+            viewModel.updateType(DateType.Last8)
+        }
+        binding.last24.setOnClickListener {
+            viewModel.updateType(DateType.Last24)
+        }
+        binding.lastWeek.setOnClickListener {
+            viewModel.updateType(DateType.LastWeek)
         }
     }
 

@@ -3,6 +3,7 @@ package com.example.graph.presentation.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import com.example.graph.domain.repository.IRepository
 import com.example.graph.domain.repository.Repository
+import com.example.graph.presentation.ui.glucose_graph.model.DateType
 import com.example.graph.presentation.ui.glucose_graph.model.GraphData
 import kotlinx.coroutines.flow.StateFlow
 
@@ -14,5 +15,10 @@ class MainViewModel : ViewModel() {
 
     fun updateGraph(){
         repository.updateGraph()
+    }
+
+    fun updateType(type: DateType) {
+        repository.updateType(type)
+
     }
 }
